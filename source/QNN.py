@@ -53,7 +53,7 @@ class Q_CNN(nn.Module):
         x = F.linear(self.output(x))
         return x
 
-def train():
+def train_lnn():
     pass
 
 model1 = Q_LNN()
