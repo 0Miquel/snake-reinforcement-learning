@@ -1,12 +1,20 @@
 import numpy as np
 import random
 import torch
+from QNN import Q_LNN, Q_CNN
 
 class Agent:
-    def __init__(self, model, model_mode, epsilon = 1):
+    def __init__(self, model_type, gamma, batch_size = 1, epsilon = 1):
         self.epsilon = epsilon #1 = random move 100%, 0 = no random moves
-        self.model = model
-        self.model_mode = model_mode
+        self.gamma = gamma
+
+        self.batch_size = batch_size
+        self.model_type = model_type
+        if self.model_type == 'lnn':
+            self.model = Q_LNN()
+        elif self.mode_type == 'cnn':
+            self.model = Q_CNN()
+
 
     def get_state(self, env):
         apple = list(env.env.grid.apples._set)[0]  # columna, fila
@@ -45,21 +53,24 @@ class Agent:
         return np.array([apple_left, apple_right, apple_up, apple_down, dir_left, dir_right,
                 dir_up, dir_down, danger_left, danger_right, danger_straight], dtype=int)
 
+
     def get_action(self, state, env):
         random_move = np.random.choice([False, True], p=[1 - self.epsilon, self.epsilon])
         if random_move: #random move
             move = env.action_space.sample()
         else: #model move
-            if self.model_mode == 'lnn' or self.model_mode == 'cnn':
+            if self.model_type == 'lnn' or self.model_type == 'cnn':
                 pred = self.model(state)
                 move = torch.argmax(pred).item()
-            elif self.model_mode == 'tabular':
+            elif self.model_type == 'tabular':
                 pred = self.model[state]
                 move = pred.index(max(pred))
         return move
 
+
     def decrease_epsilon(self):
         self.epsilon = self.epsilon - 0.01
+
 
     def train(self):
         pass
