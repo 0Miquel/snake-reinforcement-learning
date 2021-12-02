@@ -1,10 +1,12 @@
 import numpy as np
 import random
+import torch
 
 class Agent:
-    def __init__(self, model, epsilon = 1):
+    def __init__(self, model, model_mode, epsilon = 1):
         self.epsilon = epsilon #1 = random move 100%, 0 = no random moves
         self.model = model
+        self.model_mode = model_mode
 
     def get_state(self, env):
         apple = list(env.env.grid.apples._set)[0]  # columna, fila
@@ -48,8 +50,12 @@ class Agent:
         if random_move: #random move
             move = env.action_space.sample()
         else: #model move
-            pass
-
+            if self.model_mode == 'lnn' or self.model_mode == 'cnn':
+                pred = self.model(state)
+                move = torch.argmax(pred).item()
+            elif self.model_mode == 'tabular':
+                pred = self.model[state]
+                move = pred.index(max(pred))
         return move
 
     def decrease_epsilon(self):
