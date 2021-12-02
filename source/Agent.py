@@ -2,8 +2,8 @@ import numpy as np
 import random
 
 class Agent:
-    def __init__(self, epsilon, model):
-        self.epsilon = epsilon
+    def __init__(self, model, epsilon = 1):
+        self.epsilon = epsilon #1 = random move 100%, 0 = no random moves
         self.model = model
 
     def get_state(self, env):
@@ -40,14 +40,20 @@ class Agent:
                            dir_left and colission((head[0] - 1, head[1]), queue) or
                            dir_right and colission((head[0] + 1, head[1]), queue))
 
-        return [apple_left, apple_right, apple_up, apple_down, dir_left, dir_right,
-                dir_up, dir_down, danger_left, danger_right, danger_straight]
+        return np.array([apple_left, apple_right, apple_up, apple_down, dir_left, dir_right,
+                dir_up, dir_down, danger_left, danger_right, danger_straight], dtype=int)
 
-    def get_action(self, state):
-        if True: #random move
-            pass
+    def get_action(self, state, env):
+        random_move = np.random.choice([False, True], p=[1 - self.epsilon, self.epsilon])
+        if random_move: #random move
+            move = env.action_space.sample()
         else: #model move
             pass
+
+        return move
+
+    def decrease_epsilon(self):
+        self.epsilon = self.epsilon - 0.01
 
     def train(self):
         pass

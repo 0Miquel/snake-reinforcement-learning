@@ -53,10 +53,27 @@ class Q_CNN(nn.Module):
         x = F.linear(self.output(x))
         return x
 
-def train_lnn():
-    pass
+def train_nn(model, optimizer, loss_fn, state, action, reward, next_state, gameOver):
+    #TODO: TRANSFORM PARAMETERS TO TORCH TENSOR AND PROPER DIMENSION (batch, x)
 
-model1 = Q_LNN()
+
+    ###########################################################################
+    model.train()
+    pred = model(state)
+    target = pred.clone()
+    #TODO: MODIFY TARGET WITH BELLMAN EQUATION
+
+
+    ##########################################
+    loss = loss_fn(target, pred)
+    optimizer.zero_grad()
+    loss.backward()
+    optimizer.step()
+
+
+
+
+"""model1 = Q_LNN()
 model2 = Q_CNN()
 print(model1)
-print(model2)
+print(model2)"""
