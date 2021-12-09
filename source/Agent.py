@@ -23,7 +23,6 @@ class Agent:
 
         self.memory = deque(maxlen=self.batch_size)
 
-
     def get_state(self, env):
         apple = list(env.env.grid.apples._set)[0]  # columna, fila
         head = env.env.grid.snakes[0]._deque[-1]
@@ -62,7 +61,7 @@ class Agent:
                 dir_up, dir_down, danger_left, danger_right, danger_straight], dtype=int)
 
 
-    def get_action(self, state, env):
+    def get_action(self, state, env, qTable):
         random_move = np.random.choice([False, True], p=[1 - self.epsilon, self.epsilon])
         if random_move: #random move
             move = env.action_space.sample()
@@ -71,7 +70,7 @@ class Agent:
                 pred = self.model(torch.tensor(state, dtype=torch.float))
                 move = torch.argmax(pred).item()
             elif self.model_type == 'tabular':
-                pred = self.model[state]
+                pred = qTable[state]
                 move = pred.index(max(pred))
         return move
 

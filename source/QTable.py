@@ -15,17 +15,19 @@ def qLearning(agent, env, qTable, lastState, lastAction, reward):
         actualRewards = qTable[actualState] #array of three qvalues, each for a diferent actin
     else:
         qTable[actualState] = [0,0,0]'''
-    if actualState not in qTable: #add new state to the dictionary if it wasn't there
+    if actualState not in qTable: # add new state to the dictionary if it wasn't there
         qTable[actualState] = [0, 0, 0]
 
-    lastState = qTable[lastState] #array of three qvalues, each for a different action
+    if lastState is None:
+        lastState = actualState
 
     # we calculate the new value of the qTable, using the reward from the previous action and updating it on the table
-    qTable[lastState][lastAction] = qTable[lastState][lastAction] + \
-            learning_rate * (reward + discount_factor*max(qTable[actualState]) - qTable[lastState])
+    if lastAction is not None:
+        qTable[lastState][lastAction] = qTable[lastState][lastAction] + \
+                learning_rate * (reward + discount_factor*max(qTable[actualState]) - qTable[lastState][lastAction])
 
-    lastState = actualState # update new state
+    newAction = agent.get_action(actualState, env, qTable) # get action for the new state
 
-    newAction = agent.get_action(actualState, env) # get action for the new state
+    lastState = actualState  # update new state
 
     return newAction, lastState
