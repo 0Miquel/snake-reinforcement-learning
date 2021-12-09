@@ -55,14 +55,27 @@ class Q_CNN(nn.Module):
 
 def train_nn(model, optimizer, loss_fn, state, action, reward, next_state, gameOver):
     #TODO: TRANSFORM PARAMETERS TO TORCH TENSOR AND PROPER DIMENSION (batch, x)
-
-
+    state = torch.tensor(state, dtype=torch.float)
+    next_state = torch.tensor(next_state, dtype=torch.float)
+    action = torch.tensor(action, dtype=torch.long)
+    reward = torch.tensor(reward, dtype=torch.float)
+    state = torch.unsqueeze(state, 0)
+    next_state = torch.unsqueeze(next_state, 0)
+    action = torch.unsqueeze(action, 0)
+    reward = torch.unsqueeze(reward, 0)
+    gameOver = (gameOver,)
     ###########################################################################
     model.train()
     pred = model(state)
     target = pred.clone()
     #TODO: MODIFY TARGET WITH BELLMAN EQUATION
+    target = pred.clone()
+    for idx in range(len(gameOver)):
+        Q_new = reward[idx]
+        if not gameOver[idx]:
+            Q_new = reward[idx] + self.gamma * torch.max(model(next_state[idx]))
 
+        target[idx][torch.argmax(action[idx]).item()] = Q_new
 
     ##########################################
     loss = loss_fn(target, pred)

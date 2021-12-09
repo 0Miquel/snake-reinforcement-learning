@@ -1,10 +1,14 @@
 import numpy as np
 import random
 import torch
+import torch.nn as nn
+import torch.optim as optim
+
 from QNN import Q_LNN, Q_CNN
+from collections import deque
 
 class Agent:
-    def __init__(self, model_type, gamma, batch_size = 1, epsilon = 1):
+    def __init__(self, model_type, gamma = 0.9, batch_size = 1, epsilon = 1):
         self.epsilon = epsilon #1 = random move 100%, 0 = no random moves
         self.gamma = gamma
 
@@ -12,8 +16,12 @@ class Agent:
         self.model_type = model_type
         if self.model_type == 'lnn':
             self.model = Q_LNN()
-        elif self.mode_type == 'cnn':
+            self.optimizer = optim.Adam(self.model.parameters(), lr=0.1)
+            self.loss_fn = nn.MSELoss()
+        elif self.model_type == 'cnn':
             self.model = Q_CNN()
+
+        self.memory = deque(maxlen=self.batch_size)
 
 
     def get_state(self, env):
@@ -60,7 +68,7 @@ class Agent:
             move = env.action_space.sample()
         else: #model move
             if self.model_type == 'lnn' or self.model_type == 'cnn':
-                pred = self.model(state)
+                pred = self.model(torch.tensor(state, dtype=torch.float))
                 move = torch.argmax(pred).item()
             elif self.model_type == 'tabular':
                 pred = self.model[state]
@@ -69,8 +77,42 @@ class Agent:
 
 
     def decrease_epsilon(self):
-        self.epsilon = self.epsilon - 0.01
+        if self.epsilon > 0.01:
+            self.epsilon = self.epsilon - 0.01
 
+    def store_experience(self, state, action, reward, next_state, gameOver):
+        self.memory.append((state, action, reward, next_state, gameOver))
 
     def train(self):
-        pass
+        state, action, reward, next_state, gameOver = zip(*self.memory)
+        self.train_nn(self.model, self.optimizer, self.loss_fn, state, action, reward, next_state, gameOver)
+
+    def train_nn(self, model, optimizer, loss_fn, state, action, reward, next_state, gameOver):
+        # TODO: TRANSFORM PARAMETERS TO TORCH TENSOR AND PROPER DIMENSION (batch, x)
+        state = torch.tensor(state, dtype=torch.float)
+        next_state = torch.tensor(next_state, dtype=torch.float)
+        action = torch.tensor(action, dtype=torch.long)
+        reward = torch.tensor(reward, dtype=torch.float)
+        if len(state.shape) == 1:
+            state = torch.unsqueeze(state, 0)
+            next_state = torch.unsqueeze(next_state, 0)
+            action = torch.unsqueeze(action, 0)
+            reward = torch.unsqueeze(reward, 0)
+            gameOver = (gameOver,)
+        ###########################################################################
+        #model.train()
+        pred = model(state)
+        target = pred.clone()
+        # TODO: MODIFY TARGET WITH BELLMAN EQUATION
+        for idx in range(len(gameOver)):
+            Q_new = reward[idx]
+            if not gameOver[idx]:
+                Q_new = reward[idx] + self.gamma * torch.max(model(next_state[idx]))
+
+            target[idx][torch.argmax(action[idx]).item()] = Q_new
+
+        ##########################################
+        loss = loss_fn(target, pred)
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
