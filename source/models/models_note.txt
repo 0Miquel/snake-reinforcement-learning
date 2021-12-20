@@ -1,0 +1,11 @@
+(model name)-(max score)-(gamma)-(batch size)-(epsilon)-(decrease rate)-(rewards set)-(states set)
+"_" used inted of "." for decimals
+*In table method there is no batch size used*
+
+
+Rewards set:
+r1: apple = 10, gets closer = 1, gets further = -1, dies = -10
+
+
+States set:
+s1: apple_left, apple_right, apple_up, apple_down, dir_left, dir_right, dir_up, dir_down, danger_left, danger_right, danger_straight

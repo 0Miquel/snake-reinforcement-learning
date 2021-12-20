@@ -2,13 +2,10 @@ import gym
 import gym_snake
 from AgentNN import AgentNN
 
-path = "../models/model-201221.pth"
+path = "../models/model.pth"
 
 agent = AgentNN(batch_size = 1000)
 env = gym.make('Snake-16x16-v0')
-# 0 = straight
-# 1 = right
-# 2 = left
 
 observation = env.reset()
 env.render()
@@ -37,7 +34,5 @@ while(True):
         agent.long_train()
         agent.save_model(path, score)
         score = 0
-
-    #time.sleep(0.01)
 
 env.close()

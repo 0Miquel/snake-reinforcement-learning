@@ -3,7 +3,7 @@ import gym_snake
 import time
 from AgentNN import AgentNN
 
-path = "../models/model-201221.pth"
+path = "../models/LNN-46-0_9-1000-0_4-0_005-r1-s1.pth"
 
 agent = AgentNN(path = path)
 

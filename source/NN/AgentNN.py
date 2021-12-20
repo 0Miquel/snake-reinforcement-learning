@@ -11,8 +11,9 @@ from collections import deque
 MAX_MEMORY = 100000
 
 class AgentNN:
-    def __init__(self, path = None, gamma = 0.9, batch_size = 1, epsilon = 0.4):
+    def __init__(self, path = None, gamma = 0.9, batch_size = 1, epsilon = 0.4, decrease_rate = 0.005):
         self.epsilon = epsilon #1 = random move 100%, 0 = no random moves
+        self.decrease_rate = decrease_rate
         self.gamma = gamma
 
         self.max_score = -1
@@ -96,14 +97,15 @@ class AgentNN:
 
     def decrease_epsilon(self):
         if self.epsilon > 0:
-            self.epsilon = self.epsilon - 0.005
+            self.epsilon = self.epsilon - self.decrease_rate
             self.epsilon = round(self.epsilon, 3)
-            print(self.epsilon)
+            #print(self.epsilon)
 
     def save_model(self, path, score):
         if score > self.max_score:
             self.max_score = score
             torch.save(self.model.state_dict(), path)
+            #print(f'New model saved with score: {score}')
 
     def store_experience(self, state, action, reward, next_state, gameOver):
         self.memory.append((state, action, reward, next_state, gameOver))
