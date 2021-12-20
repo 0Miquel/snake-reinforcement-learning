@@ -3,25 +3,16 @@ import random
 import torch
 import torch.nn as nn
 import torch.optim as optim
+import math
 
 from source.NN.QNN import Q_CNN
 from collections import deque
 
 class Agent:
-    def __init__(self, model_type, gamma = 0.9, batch_size = 1, epsilon = 0.4):
+    def __init__(self, model_type, gamma = 0.9, epsilon = 0.4):
         self.epsilon = epsilon #1 = random move 100%, 0 = no random moves
         self.gamma = gamma
-
-        self.batch_size = batch_size
         self.model_type = model_type
-        if self.model_type == 'lnn':
-            self.model = Linear_QNet(11, 256, 3)
-            self.optimizer = optim.Adam(self.model.parameters(), lr=0.001)
-            self.loss_fn = nn.MSELoss()
-        elif self.model_type == 'cnn':
-            self.model = Q_CNN()
-
-        self.memory = deque(maxlen=self.batch_size)
 
     def get_state(self, env):
         apple = list(env.env.grid.apples._set)[0]  # columna, fila
@@ -61,28 +52,13 @@ class Agent:
                 dir_up, dir_down, danger_left, danger_right, danger_straight], dtype=int)
 
 
-    def get_action(self, state, env, n_games, qTable=None):
-        """random_move = np.random.choice([False, True], p=[1 - self.epsilon, self.epsilon])
+    def get_action(self, state, env, qTable=None):
+        random_move = np.random.choice([False, True], p=[1 - self.epsilon, self.epsilon])
         if random_move: #random move
             move = env.action_space.sample()
         else: #model move
-            if self.model_type == 'lnn' or self.model_type == 'cnn':
-                pred = self.model(torch.tensor(state, dtype=torch.float))
-                move = torch.argmax(pred).item()
-            elif self.model_type == 'tabular':
-                pred = qTable[state]
-                move = pred.index(max(pred))"""
-
-        self.epsilon = 80 - n_games
-        if random.randint(0, 200) < self.epsilon:
-            #print("Random")
-            move = env.action_space.sample()
-        else:
-            if self.model_type == 'lnn' or self.model_type == 'cnn':
-                #print("Not random")
-                pred = self.model(torch.tensor(state, dtype=torch.float))
-                move = torch.argmax(pred).item()
-
+            pred = qTable[state]
+            move = pred.index(max(pred))
         return move
 
 
@@ -105,45 +81,29 @@ class Agent:
 
     def decrease_epsilon(self):
         if self.epsilon > 0.01:
-            self.epsilon = self.epsilon - 0.001
+            self.epsilon = self.epsilon - 0.01
+            if self.epsilon < 0:
+                self.epsilon = 0
 
-    def store_experience(self, state, action, reward, next_state, gameOver):
-        self.memory.append((state, action, reward, next_state, gameOver))
-
-    #replay experience
-    def long_train(self):
-        sample = random.sample(self.memory, len(self.memory))
-        state, action, reward, next_state, gameOver = zip(*sample)
-        self.train_nn(state, action, reward, next_state, gameOver)
-
-    def short_train(self, state, action, reward, next_state, gameOver):
-        self.train_nn(state, action, reward, next_state, gameOver)
-
-    def train_nn(self, state, action, reward, next_state, gameOver):
-        state = torch.tensor(state, dtype=torch.float)
-        next_state = torch.tensor(next_state, dtype=torch.float)
-        action = torch.tensor(action, dtype=torch.long)
-        reward = torch.tensor(reward, dtype=torch.float)
-        if len(state.shape) == 1:
-            state = torch.unsqueeze(state, 0)
-            next_state = torch.unsqueeze(next_state, 0)
-            action = torch.unsqueeze(action, 0)
-            reward = torch.unsqueeze(reward, 0)
-            gameOver = (gameOver,)
-        ###########################################################################
-        #model.train()
-        pred = self.model(state)
-        target = pred.clone()
-        for idx in range(len(gameOver)):
-            Q_new = reward[idx]
-            if not gameOver[idx]:
-                Q_new = reward[idx] + self.gamma * torch.max(self.model(next_state[idx]))
-
-            #target[idx][action[idx].item()] = Q_new
-            target[idx][torch.argmax(action[idx]).item()] = Q_new
-
-        ##########################################
-        self.optimizer.zero_grad()
-        loss = self.loss_fn(target, pred)
-        loss.backward()
-        self.optimizer.step()
+    def getReward2(self, env, action, done, snakeHeadBefore, appleEaten):
+        reward = 0
+        if done is True:
+            reward = reward - 100
+        else:
+            if appleEaten is True:
+                reward = reward + 100
+            else:
+                if env.env.grid.done_apple is True:
+                    reward = reward + 100
+                else:
+                    snakeHeadActual = env.env.grid.snakes[0]._deque[-1]
+                    applePosition = list(env.env.grid.apples._set)[0]
+                    distBefore = math.sqrt(pow((snakeHeadBefore[0] - applePosition[0]), 2) + pow(
+                        (snakeHeadBefore[1] - applePosition[1]), 2))
+                    distActual = math.sqrt(pow((snakeHeadActual[0] - applePosition[0]), 2) + pow(
+                        (snakeHeadActual[1] - applePosition[1]), 2))
+                    if distActual < distBefore:
+                        reward = reward + 10
+                    else:
+                        reward = reward - 10
+        return reward
