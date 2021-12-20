@@ -38,6 +38,8 @@ class Q_LNN(nn.Module):
         x = self.output_layer(x)
         return x
 
+
+
 class Q_CNN(nn.Module):
     def __init__(self):
         super().__init__()

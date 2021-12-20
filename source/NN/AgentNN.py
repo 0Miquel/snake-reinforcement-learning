@@ -3,25 +3,31 @@ import random
 import torch
 import torch.nn as nn
 import torch.optim as optim
+import math
 
-from source.NN.QNN import Q_CNN
+from QNN import Q_LNN, Q_CNN
 from collections import deque
 
-class Agent:
-    def __init__(self, model_type, gamma = 0.9, batch_size = 1, epsilon = 0.4):
+MAX_MEMORY = 100000
+
+class AgentNN:
+    def __init__(self, path = None, gamma = 0.9, batch_size = 1, epsilon = 0.4):
         self.epsilon = epsilon #1 = random move 100%, 0 = no random moves
         self.gamma = gamma
 
-        self.batch_size = batch_size
-        self.model_type = model_type
-        if self.model_type == 'lnn':
-            self.model = Linear_QNet(11, 256, 3)
-            self.optimizer = optim.Adam(self.model.parameters(), lr=0.001)
-            self.loss_fn = nn.MSELoss()
-        elif self.model_type == 'cnn':
-            self.model = Q_CNN()
+        self.max_score = -1
 
-        self.memory = deque(maxlen=self.batch_size)
+        self.batch_size = batch_size
+        self.memory = deque(maxlen=MAX_MEMORY)
+
+        self.model = Q_LNN()
+        if path is not None:
+            self.epsilon = 0
+            self.model.load_state_dict(torch.load(path))
+            self.model.eval()
+
+        self.optimizer = optim.Adam(self.model.parameters(), lr=0.001)
+        self.loss_fn = nn.MSELoss()
 
     def get_state(self, env):
         apple = list(env.env.grid.apples._set)[0]  # columna, fila
@@ -61,34 +67,19 @@ class Agent:
                 dir_up, dir_down, danger_left, danger_right, danger_straight], dtype=int)
 
 
-    def get_action(self, state, env, n_games, qTable=None):
-        """random_move = np.random.choice([False, True], p=[1 - self.epsilon, self.epsilon])
+    def get_action(self, state, env, qTable=None):
+        random_move = np.random.choice([False, True], p=[1 - self.epsilon, self.epsilon])
         if random_move: #random move
             move = env.action_space.sample()
         else: #model move
-            if self.model_type == 'lnn' or self.model_type == 'cnn':
-                pred = self.model(torch.tensor(state, dtype=torch.float))
-                move = torch.argmax(pred).item()
-            elif self.model_type == 'tabular':
-                pred = qTable[state]
-                move = pred.index(max(pred))"""
-
-        self.epsilon = 80 - n_games
-        if random.randint(0, 200) < self.epsilon:
-            #print("Random")
-            move = env.action_space.sample()
-        else:
-            if self.model_type == 'lnn' or self.model_type == 'cnn':
-                #print("Not random")
-                pred = self.model(torch.tensor(state, dtype=torch.float))
-                move = torch.argmax(pred).item()
+            pred = self.model(torch.tensor(state, dtype=torch.float))
+            move = torch.argmax(pred).item()
 
         return move
 
-
     def get_reward(self, head, previous_head, apple, gameOver):
         if gameOver:
-            reward = -100
+            reward = -10
         else:
             #euclidian distance
             #previous_distance = math.sqrt(((previous_head[0] - apple[0]) ** 2) + ((previous_head[1] - apple[1]) ** 2))
@@ -104,22 +95,33 @@ class Agent:
         return reward
 
     def decrease_epsilon(self):
-        if self.epsilon > 0.01:
-            self.epsilon = self.epsilon - 0.001
+        if self.epsilon > 0:
+            self.epsilon = self.epsilon - 0.005
+            self.epsilon = round(self.epsilon, 3)
+            print(self.epsilon)
+
+    def save_model(self, path, score):
+        if score > self.max_score:
+            self.max_score = score
+            torch.save(self.model.state_dict(), path)
 
     def store_experience(self, state, action, reward, next_state, gameOver):
         self.memory.append((state, action, reward, next_state, gameOver))
 
     #replay experience
     def long_train(self):
-        sample = random.sample(self.memory, len(self.memory))
-        state, action, reward, next_state, gameOver = zip(*sample)
-        self.train_nn(state, action, reward, next_state, gameOver)
+        if len(self.memory) > self.batch_size:
+            mini_sample = random.sample(self.memory, self.batch_size)  # list of tuples
+        else:
+            mini_sample = self.memory
+
+        state, action, reward, next_state, gameOver = zip(*mini_sample)
+        self.train(state, action, reward, next_state, gameOver)
 
     def short_train(self, state, action, reward, next_state, gameOver):
-        self.train_nn(state, action, reward, next_state, gameOver)
+        self.train(state, action, reward, next_state, gameOver)
 
-    def train_nn(self, state, action, reward, next_state, gameOver):
+    def train(self, state, action, reward, next_state, gameOver):
         state = torch.tensor(state, dtype=torch.float)
         next_state = torch.tensor(next_state, dtype=torch.float)
         action = torch.tensor(action, dtype=torch.long)
@@ -139,11 +141,11 @@ class Agent:
             if not gameOver[idx]:
                 Q_new = reward[idx] + self.gamma * torch.max(self.model(next_state[idx]))
 
-            #target[idx][action[idx].item()] = Q_new
-            target[idx][torch.argmax(action[idx]).item()] = Q_new
+            target[idx][action[idx].item()] = Q_new
 
         ##########################################
         self.optimizer.zero_grad()
         loss = self.loss_fn(target, pred)
         loss.backward()
         self.optimizer.step()
+
