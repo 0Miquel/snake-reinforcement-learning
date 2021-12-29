@@ -11,7 +11,7 @@ from collections import deque
 MAX_MEMORY = 100000
 
 class AgentNN:
-    def __init__(self, path = None, gamma = 0.9, batch_size = 1, epsilon = 0.4, decrease_rate = 0.005):
+    def __init__(self, path = None, gamma = 0.9, batch_size = 1000, epsilon = 0.4, decrease_rate = 0.005):
         self.epsilon = epsilon #1 = random move 100%, 0 = no random moves
         self.decrease_rate = decrease_rate
         self.gamma = gamma
@@ -112,23 +112,19 @@ class AgentNN:
     def store_experience(self, state, action, reward, next_state, gameOver):
         self.short_memory.append((state, action, reward, next_state, gameOver))
 
-    #replay experience
-    def long_train(self, reward):
+    def update_memory(self, reward):
         if reward != -2:
             self.memory.extendleft(self.short_memory)
         else:
+            self.short_memory = np.array(self.short_memory)
+            self.short_memory[:, 2] = -0.5
+            self.memory.extendleft(self.short_memory)
             print("Timeout")
-            #self.short_memory = np.array(self.short_memory)
-            #indexes = np.where(self.short_memory[:, 2]==1)[0]
-            #if indexes.size == 0:
-            #    i = -1
-            #else:
-            #    i = max(indexes)
-            #self.short_memory[i + 1:, 2] = -0.5
-            #self.memory.extendleft(self.short_memory)
 
         self.short_memory = []
 
+    #replay experience
+    def long_train(self):
         if len(self.memory) > self.batch_size:
             sample = random.sample(self.memory, self.batch_size)
         else:

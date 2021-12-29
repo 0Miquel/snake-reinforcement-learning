@@ -11,7 +11,7 @@ from collections import deque
 MAX_MEMORY = 100000
 
 class AgentNN:
-    def __init__(self, path = None, gamma = 0.9, batch_size = 1, epsilon = 0.4, decrease_rate = 0.005):
+    def __init__(self, path = None, gamma = 0.9, batch_size = 1000, epsilon = 1, decrease_rate = 0.0002):
         self.epsilon = epsilon #1 = random move 100%, 0 = no random moves
         self.decrease_rate = decrease_rate
         self.gamma = gamma
@@ -29,7 +29,7 @@ class AgentNN:
             self.model.load_state_dict(torch.load(path))
             self.model.eval()
 
-        self.optimizer = optim.Adam(self.model.parameters(), lr=0.001)
+        self.optimizer = optim.Adam(self.model.parameters(), lr=0.0001)
         self.loss_fn = nn.MSELoss()
 
 
@@ -96,8 +96,8 @@ class AgentNN:
             if distance > previous_distance:
                 reward = -0.1
             else:
-                #reward = 1
-                reward = 0.9 / distance
+                reward = 0.1
+                #reward = 0.9 / distance
 
         return reward
 
@@ -119,29 +119,19 @@ class AgentNN:
     def store_experience(self, state, action, reward, next_state, gameOver):
         self.short_memory.append((state, action, reward, next_state, gameOver))
 
-    """
-    def store_experience(self, reward):
-        self.short_memory = np.array(self.short_memory)
-        if reward == -5:
-            self.short_memory[:, 2] = reward
-
-        good_long_memory = self.short_memory[self.short_memory[:, 2] > 3]
-        bad_long_memory = self.short_memory[self.short_memory[:, 2] <= 3]
-
-        self.good_long_memory.extendleft(good_long_memory)
-        self.bad_long_memory.extendleft(bad_long_memory)
-        self.short_memory = []
-    """
-
-    #replay experience
-    def long_train(self, reward):
+    def update_memory(self, reward):
         if reward != -2:
             self.memory.extendleft(self.short_memory)
         else:
+            self.short_memory = np.array(self.short_memory)
+            self.short_memory[:, 2] = -0.5
+            self.memory.extendleft(self.short_memory)
             print("Timeout")
 
         self.short_memory = []
 
+    #replay experience
+    def long_train(self):
         if len(self.memory) > self.batch_size:
             sample = random.sample(self.memory, self.batch_size)
         else:

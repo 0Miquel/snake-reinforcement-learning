@@ -11,7 +11,7 @@ class Q_LNN(nn.Module):
         input_layer = []
         input_layer.append(nn.Linear(input_size, hidden_size[0]))
         input_layer.append(nn.ReLU())
-        #input_layer.append(nn.Dropout(dropout))
+        input_layer.append(nn.Dropout(dropout))
         self.input_layer = nn.Sequential(*input_layer)
 
         #Hidden layers in case we have more than one hidden layer
@@ -43,18 +43,18 @@ class Q_LNN(nn.Module):
 class Q_CNN(nn.Module):
     def __init__(self):
         super().__init__()
-        self.conv1 = nn.Conv2d(3, 32, kernel_size=7)
-        self.conv2 = nn.Conv2d(32, 64, kernel_size=5)
-        self.conv3 = nn.Conv2d(64, 64, kernel_size=3)
-        self.fc1 = nn.Linear(1024, 256)
-        self.output = nn.Linear(256, 3)
+        self.conv1 = nn.Conv2d(3, 32, kernel_size=3)
+        self.conv2 = nn.Conv2d(32, 64, kernel_size=2)
+        self.maxPool = nn.MaxPool2d(2)
+        self.fc1 = nn.Linear(256, 128)
+        self.output = nn.Linear(128, 3)
 
     def forward(self, x):
         if len(x.shape) == 3:
             x = torch.unsqueeze(x, 0)
         x = F.relu(self.conv1(x))
+        x = self.maxPool(x)
         x = F.relu(self.conv2(x))
-        x = F.relu(self.conv3(x))
         x = x.view(x.size(0), -1)
         x = F.relu(self.fc1(x))
         x = self.output(x)
