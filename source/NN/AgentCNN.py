@@ -19,10 +19,11 @@ class AgentNN:
         self.max_score = -1
 
         self.batch_size = batch_size
+
         self.short_memory = []
         self.memory = deque(maxlen=MAX_MEMORY)
 
-        self.model = Q_LNN()
+        self.model = Q_CNN()
         if path is not None:
             self.epsilon = 0
             self.model.load_state_dict(torch.load(path))
@@ -30,6 +31,7 @@ class AgentNN:
 
         self.optimizer = optim.Adam(self.model.parameters(), lr=0.001)
         self.loss_fn = nn.MSELoss()
+
 
     def get_state(self, env):
         apple = list(env.env.grid.apples._set)[0]  # columna, fila
@@ -74,10 +76,12 @@ class AgentNN:
         if random_move: #random move
             move = env.action_space.sample()
         else: #model move
-            pred = self.model(torch.tensor(state, dtype=torch.float))
+            state = torch.tensor(state, dtype=torch.float).permute(2, 0, 1)
+            pred = self.model(state)
             move = torch.argmax(pred).item()
 
         return move
+
 
     def get_reward(self, head, previous_head, apple, gameOver):
         if gameOver:
@@ -92,10 +96,11 @@ class AgentNN:
             if distance > previous_distance:
                 reward = -0.1
             else:
-                reward = 0.1
-                #reward = 0.6 / distance
+                #reward = 1
+                reward = 0.9 / distance
 
         return reward
+
 
     def decrease_epsilon(self):
         if self.epsilon > 0:
@@ -103,14 +108,30 @@ class AgentNN:
             self.epsilon = round(self.epsilon, 3)
             #print(self.epsilon)
 
+
     def save_model(self, path, score):
         if score > self.max_score:
             self.max_score = score
             torch.save(self.model.state_dict(), path)
             #print(f'New model saved with score: {score}')
 
+
     def store_experience(self, state, action, reward, next_state, gameOver):
         self.short_memory.append((state, action, reward, next_state, gameOver))
+
+    """
+    def store_experience(self, reward):
+        self.short_memory = np.array(self.short_memory)
+        if reward == -5:
+            self.short_memory[:, 2] = reward
+
+        good_long_memory = self.short_memory[self.short_memory[:, 2] > 3]
+        bad_long_memory = self.short_memory[self.short_memory[:, 2] <= 3]
+
+        self.good_long_memory.extendleft(good_long_memory)
+        self.bad_long_memory.extendleft(bad_long_memory)
+        self.short_memory = []
+    """
 
     #replay experience
     def long_train(self, reward):
@@ -118,14 +139,6 @@ class AgentNN:
             self.memory.extendleft(self.short_memory)
         else:
             print("Timeout")
-            #self.short_memory = np.array(self.short_memory)
-            #indexes = np.where(self.short_memory[:, 2]==1)[0]
-            #if indexes.size == 0:
-            #    i = -1
-            #else:
-            #    i = max(indexes)
-            #self.short_memory[i + 1:, 2] = -0.5
-            #self.memory.extendleft(self.short_memory)
 
         self.short_memory = []
 
@@ -137,20 +150,24 @@ class AgentNN:
         state, action, reward, next_state, gameOver = zip(*sample)
         self.train(state, action, reward, next_state, gameOver)
 
+
     def short_train(self, state, action, reward, next_state, gameOver):
         self.train(state, action, reward, next_state, gameOver)
+
 
     def train(self, state, action, reward, next_state, gameOver):
         state = torch.tensor(state, dtype=torch.float)
         next_state = torch.tensor(next_state, dtype=torch.float)
         action = torch.tensor(action, dtype=torch.long)
         reward = torch.tensor(reward, dtype=torch.float)
-        if len(state.shape) == 1:
+        if len(state.shape) == 3:
             state = torch.unsqueeze(state, 0)
             next_state = torch.unsqueeze(next_state, 0)
             action = torch.unsqueeze(action, 0)
             reward = torch.unsqueeze(reward, 0)
             gameOver = (gameOver, )
+        state = state.permute(0, 3, 1, 2)
+        next_state = next_state.permute(0, 3, 1, 2)
 
         pred = self.model(state)
         target = pred.clone()

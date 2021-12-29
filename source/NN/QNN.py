@@ -43,17 +43,19 @@ class Q_LNN(nn.Module):
 class Q_CNN(nn.Module):
     def __init__(self):
         super().__init__()
-        self.conv1 = nn.Conv2d(3, 32, kernel_size=7, stride=4)
-        self.conv2 = nn.Conv2d(32, 64, kernel_size=5, stride=2)
-        self.conv3 = nn.Conv2d(64, 128, kernel_size=3, stride=2)
-        self.fc1 = nn.Linear(4000, 512)
-        self.output = nn.Linear(512, 3)
+        self.conv1 = nn.Conv2d(3, 32, kernel_size=7)
+        self.conv2 = nn.Conv2d(32, 64, kernel_size=5)
+        self.conv3 = nn.Conv2d(64, 64, kernel_size=3)
+        self.fc1 = nn.Linear(1024, 256)
+        self.output = nn.Linear(256, 3)
 
     def forward(self, x):
+        if len(x.shape) == 3:
+            x = torch.unsqueeze(x, 0)
         x = F.relu(self.conv1(x))
         x = F.relu(self.conv2(x))
         x = F.relu(self.conv3(x))
         x = x.view(x.size(0), -1)
-        x = F.relu(self.f1(x))
-        x = F.linear(self.output(x))
+        x = F.relu(self.fc1(x))
+        x = self.output(x)
         return x
