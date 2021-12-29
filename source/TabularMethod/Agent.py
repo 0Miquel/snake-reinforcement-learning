@@ -80,7 +80,7 @@ class Agent:
         return reward
 
     def decrease_epsilon(self):
-        if self.epsilon > 0.01:
+        if self.epsilon > 0:
             self.epsilon = self.epsilon - 0.01
             if self.epsilon < 0:
                 self.epsilon = 0
@@ -98,10 +98,14 @@ class Agent:
                 else:
                     snakeHeadActual = env.env.grid.snakes[0]._deque[-1]
                     applePosition = list(env.env.grid.apples._set)[0]
+                    '''
                     distBefore = math.sqrt(pow((snakeHeadBefore[0] - applePosition[0]), 2) + pow(
                         (snakeHeadBefore[1] - applePosition[1]), 2))
                     distActual = math.sqrt(pow((snakeHeadActual[0] - applePosition[0]), 2) + pow(
-                        (snakeHeadActual[1] - applePosition[1]), 2))
+                        (snakeHeadActual[1] - applePosition[1]), 2))'''
+                    distActual = sum(abs(val1 - val2) for val1, val2 in zip(applePosition, snakeHeadActual))
+                    distBefore = sum(abs(val1 - val2) for val1, val2 in zip(applePosition, snakeHeadBefore))
+
                     if distActual < distBefore:
                         reward = reward + 10
                     else:
