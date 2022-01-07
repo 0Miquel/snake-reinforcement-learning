@@ -11,7 +11,7 @@ from collections import deque
 MAX_MEMORY = 100000
 
 class AgentNN:
-    def __init__(self, path = None, gamma = 0.9, batch_size = 1000, epsilon = 1, decrease_rate = 0.0002):
+    def __init__(self, path = None, gamma = 0.9, batch_size = 100, epsilon = 0.4, decrease_rate = 0.005):
         self.epsilon = epsilon #1 = random move 100%, 0 = no random moves
         self.decrease_rate = decrease_rate
         self.gamma = gamma
@@ -22,6 +22,8 @@ class AgentNN:
 
         self.short_memory = []
         self.memory = deque(maxlen=MAX_MEMORY)
+        self.good_memory = deque(maxlen=MAX_MEMORY)
+        self.bad_memory = deque(maxlen=MAX_MEMORY)
 
         self.model = Q_CNN()
         if path is not None:
@@ -76,7 +78,7 @@ class AgentNN:
         if random_move: #random move
             move = env.action_space.sample()
         else: #model move
-            state = torch.tensor(state, dtype=torch.float).permute(2, 0, 1)
+            state = torch.tensor(state, dtype=torch.float)#.permute(2, 0, 1)
             pred = self.model(state)
             move = torch.argmax(pred).item()
 
@@ -94,10 +96,10 @@ class AgentNN:
             distance = sum(abs(val1 - val2) for val1, val2 in zip(apple, head))
             previous_distance = sum(abs(val1 - val2) for val1, val2 in zip(apple, previous_head))
             if distance > previous_distance:
-                reward = -0.1
+                reward = -0.2
             else:
-                reward = 0.1
-                #reward = 0.9 / distance
+                #reward = 0.1
+                reward = 0.9 / distance
 
         return reward
 
@@ -122,16 +124,34 @@ class AgentNN:
     def update_memory(self, reward):
         if reward != -2:
             self.memory.extendleft(self.short_memory)
+
+            """short_memory = np.array(self.short_memory)
+            if short_memory.size != 0:
+                self.good_memory.extendleft(short_memory[short_memory[:, 2] >= 0.1])
+                self.bad_memory.extendleft(short_memory[short_memory[:, 2] < 0.1])"""
+
         else:
-            self.short_memory = np.array(self.short_memory)
-            self.short_memory[:, 2] = -0.5
-            self.memory.extendleft(self.short_memory)
+            #self.short_memory = np.array(self.short_memory)
+            #self.short_memory[:, 2] = -0.5
+            #self.memory.extendleft(self.short_memory)
             print("Timeout")
 
         self.short_memory = []
 
     #replay experience
     def long_train(self):
+        """if len(self.good_memory) > self.batch_size*3//4:
+            good_sample = random.sample(self.good_memory, self.batch_size*3//4)
+        else:
+            good_sample = list(self.good_memory)
+
+        if len(self.bad_memory) > self.batch_size//4:
+            bad_sample = random.sample(self.bad_memory, self.batch_size//4)
+        else:
+            bad_sample = list(self.bad_memory)
+
+        sample = good_sample + bad_sample"""
+
         if len(self.memory) > self.batch_size:
             sample = random.sample(self.memory, self.batch_size)
         else:
@@ -150,14 +170,14 @@ class AgentNN:
         next_state = torch.tensor(next_state, dtype=torch.float)
         action = torch.tensor(action, dtype=torch.long)
         reward = torch.tensor(reward, dtype=torch.float)
-        if len(state.shape) == 3:
+        if len(state.shape) == 2:
             state = torch.unsqueeze(state, 0)
             next_state = torch.unsqueeze(next_state, 0)
             action = torch.unsqueeze(action, 0)
             reward = torch.unsqueeze(reward, 0)
             gameOver = (gameOver, )
-        state = state.permute(0, 3, 1, 2)
-        next_state = next_state.permute(0, 3, 1, 2)
+        #state = state.permute(0, 3, 1, 2)
+        #next_state = next_state.permute(0, 3, 1, 2)
 
         pred = self.model(state)
         target = pred.clone()
