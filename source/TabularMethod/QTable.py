@@ -30,7 +30,7 @@ def qLearning(agent, env, qTable, snakeHead, score):
     if actualState not in qTable: # add new state to the dictionary if it wasn't there
         qTable[actualState] = [0, 0, 0]
 
-    reward = agent.getReward2(env, action, done, snakeHead, appleEaten)
+    reward = agent.getReward(env, action, done, snakeHead, appleEaten)
 
     # we calculate the new value of the qTable, using the reward from the previous action and updating it on the table
 
@@ -72,7 +72,7 @@ def sarsa(action, agent, env, qTable, snakeHead, score, actualState):
     if actualState not in qTable: # add new state to the dictionary if it wasn't there
         qTable[actualState] = [0, 0, 0]
 
-    reward = agent.getReward2(env, action, done, snakeHead, appleEaten)
+    reward = agent.getReward(env, action, done, snakeHead, appleEaten)
 
     newAction = agent.get_action(actualState, env, qTable)  # get action for the new state (after first action)
 
