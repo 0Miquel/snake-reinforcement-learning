@@ -130,12 +130,14 @@ class AgentNN:
                 distance = sum(abs(val1 - val2) for val1, val2 in zip(apple, head))
                 previous_distance = sum(abs(val1 - val2) for val1, val2 in zip(apple, previous_head))
                 if distance > previous_distance:
-                    new_reward = -0.3
+                    new_reward = -0.1
                 else:
                     new_reward = 0.1
                     # reward = 0.6 / distance
             elif self.reward_type == 2:
                 new_reward = 0.1
+            elif self.reward_type == 3:
+                new_reward = -0.1
 
         return new_reward
 
@@ -158,27 +160,20 @@ class AgentNN:
         if reward != -2:
             self.memory.extendleft(self.short_memory)
         else:
-            #self.short_memory = np.array(self.short_memory)
-            #self.short_memory[:, 2] = -0.5
-            #self.memory.extendleft(self.short_memory)
             print("Timeout")
 
         self.short_memory = []
 
-    #replay experience
-    def long_train(self):
-        if self.batch_size > 0:
-            if len(self.memory) > self.batch_size:
-                sample = random.sample(self.memory, self.batch_size)
-            else:
-                sample = self.memory
+    #replay experiences
+    def replay_experiences(self):
+        if len(self.memory) > self.batch_size:
+            sample = random.sample(self.memory, self.batch_size)
+        else:
+            sample = self.memory
 
-            if list(sample) != []:
-                state, action, reward, next_state, gameOver = zip(*sample)
-                self.train(state, action, reward, next_state, gameOver)
-
-    def short_train(self, state, action, reward, next_state, gameOver):
-        self.train(state, action, reward, next_state, gameOver)
+        if list(sample) != []:
+            state, action, reward, next_state, gameOver = zip(*sample)
+            self.train(state, action, reward, next_state, gameOver)
 
     def train(self, state, action, reward, next_state, gameOver):
         state = torch.tensor(state, dtype=torch.float)

@@ -4,6 +4,7 @@ import torch.optim as optim
 import torch.nn.functional as F
 import os
 
+#Linear neural network
 class Q_LNN(nn.Module):
     def __init__(self, input_size = 11, output_size = 3, hidden_size = [256], dropout = 0):
         super().__init__()
@@ -39,7 +40,7 @@ class Q_LNN(nn.Module):
         return x
 
 
-
+#Convolutional neural network
 class Q_CNN(nn.Module):
     def __init__(self):
         super().__init__()

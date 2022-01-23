@@ -19,7 +19,7 @@ AgentNN(batch_size=1000, hidden_layers=[100, 100, 100], dropout=0, epsilon=1, re
 AgentNN(batch_size = 1000, hidden_layers=[256], dropout=0, epsilon=1, reward_type=1),
 AgentNN(batch_size = 500, hidden_layers=[256], dropout=0, epsilon=1, reward_type=1),
 AgentNN(batch_size = 100, hidden_layers=[256], dropout=0, epsilon=1, reward_type=1),
-AgentNN(batch_size = 0, hidden_layers=[256], dropout=0, epsilon=1, reward_type=1)
+AgentNN(batch_size = 1, hidden_layers=[256], dropout=0, epsilon=1, reward_type=1)
 ]"""
 #Experiment 3
 """agents = [
@@ -28,18 +28,19 @@ AgentNN(batch_size = 1000, hidden_layers=[256], dropout=0.3, epsilon=1, reward_t
 AgentNN(batch_size = 1000, hidden_layers=[256], dropout=0.5, epsilon=1, reward_type=1)
 ]"""
 #Experiment 4
-agents = [
+"""agents = [
 AgentNN(batch_size = 1000, hidden_layers=[256], dropout=0, epsilon=1, reward_type=1),
 AgentNN(batch_size = 1000, hidden_layers=[256], dropout=0, epsilon=0.66, reward_type=1),
 AgentNN(batch_size = 1000, hidden_layers=[256], dropout=0, epsilon=0.33, reward_type=1),
 AgentNN(batch_size = 1000, hidden_layers=[256], dropout=0, epsilon=1, decrease_rate = 0.02 ,reward_type=1)
-]
-#Experiment 5
-"""agents = [
-AgentNN(batch_size = 1000, hidden_layers=[256], dropout=0, epsilon=1, reward_type=1),
-AgentNN(batch_size = 1000, hidden_layers=[256], dropout=0, epsilon=1, reward_type=0),
-AgentNN(batch_size = 1000, hidden_layers=[256], dropout=0, epsilon=1, reward_type=2)
 ]"""
+#Experiment 5
+agents = [
+AgentNN(batch_size = 1000, hidden_layers=[256], dropout=0, epsilon=1, reward_type=0),
+AgentNN(batch_size = 1000, hidden_layers=[256], dropout=0, epsilon=1, reward_type=1),
+AgentNN(batch_size = 1000, hidden_layers=[256], dropout=0, epsilon=1, reward_type=2),
+AgentNN(batch_size = 1000, hidden_layers=[256], dropout=0, epsilon=1, reward_type=3)
+]
 
 for i in range(len(agents)):
     agent = agents[i]
@@ -67,13 +68,11 @@ for i in range(len(agents)):
 
         next_state = agent.get_state(env)
         agent.store_experience(state, action, reward, next_state, done)
-        agent.short_train(state, action, reward, next_state, done)
-
         if done:
             env.reset()
             agent.decrease_epsilon()
             agent.update_memory(reward)
-            agent.long_train()
+            agent.replay_experiences()
 
             total_score += score
             mean_scores.append(total_score / n_games)
@@ -84,11 +83,11 @@ for i in range(len(agents)):
     results.append(mean_scores)
 
 
-plt.plot(np.arange(total_games), results[0], label="Epsilon 1")
-plt.plot(np.arange(total_games), results[1], label="Epsilon 0.66")
-plt.plot(np.arange(total_games), results[2], label="Epsilon 0.33")
-plt.plot(np.arange(total_games), results[3], label="Epsilon 1-0.02")
-plt.title("Epsilon comparison")
+plt.plot(np.arange(total_games), results[0], label="Reward 0")
+plt.plot(np.arange(total_games), results[1], label="Reward 1")
+plt.plot(np.arange(total_games), results[2], label="Reward 2")
+plt.plot(np.arange(total_games), results[3], label="Reward 3")
+plt.title("Reward comparison")
 plt.xlabel('Number of Games')
 plt.ylabel('Mean Score')
 plt.legend()
