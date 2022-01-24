@@ -8,10 +8,10 @@ import gym_snake
 
 import matplotlib.pyplot as plt
 
-def loadQTable(qTable, mode):
-    agent = Agent('tabular', 0, epsilon=0.0)
+def loadQTable(qTable, mode, gamma, epsilon, reward, state):
+    agent = Agent(gamma=gamma, epsilon=epsilon, rewardType=reward, stateType=state)
     if mode == 'qlearning':
-        file = open("qTableReward1-0_9-1-0_1-0_9.txt", "rb")
+        file = open("qTableReward.txt", "rb")
     else:
         file = open("qTableSarsa.txt", "rb")
     qTable = pickle.load(file)
@@ -21,62 +21,64 @@ def loadQTable(qTable, mode):
 
 def storeQTable(qTable, mode):
     if mode == 'qlearning':
-        file = open("qTableReward1-0_9-1-0_1-0_9.txt", "wb")
+        file = open("qTableReward.txt", "wb")
     else:
         file = open("qTableSarsa.txt", "wb")
     pickle.dump(qTable, file)
     file.close()
 
 
-def plot(score, totalScore, scoreList, meanScoreList, numberOfGames):
-    scoreList.append(score)
-    totalScore = totalScore + score
-    meanScore = totalScore / numberOfGames
-    meanScoreList.append(meanScore)
+def plot(scoreList, meanScoreList):
     plt.plot(np.array(scoreList))
     plt.plot(meanScoreList)
-    plt.title('Results of training')
+    plt.title('Results of training qlearning')
     plt.xlabel('Number of Games')
     plt.ylabel('Score')
     plt.show(block=False)
 
 
 if __name__ == "__main__":
-    qTable = {}
-    agent = Agent('tabular', gamma = 0.9, epsilon = 1, rewardType = 2)
-
-    mode = 'sarsa'
     action = None
     actualState = None
 
-    # Plot
+    env = gym.make('Snake-16x16-v0')
+    observation = env.reset()
+    env.render()
+
+    qTable = {}
+    action = None
+    actualState = None
+
+    #Plot values
     plt.ion()
     scoreList = []
     meanScoreList = []
     score = 0
     numberOfGames = 1
     totalScore = 0
+    maxScore = 0
 
+
+    #Choose algorithm and if you want to load a dictionary or train a new one, you can also store it
+    mode = 'qlearning' #qlearning or sarsa
     load = False
-    store = True
-
-    env = gym.make('Snake-16x16-v0')
-
-    observation = env.reset()
-
-    env.render()
+    store = False
 
     if load is True:
-        agent, qTable = loadQTable(qTable, mode)
+        #you pass qTable, mode, gamma, espilon, rewardType, stateType
+        agent, qTable = loadQTable(qTable, mode, 0.5, 0, 0, 0)
+    else:
+        agent = Agent(gamma=0.9, epsilon=0.66, rewardType=0, stateType=0, learningRate=0.1)  # rewardType can be value from 0 to 3
 
-    #for i in range(10000):
-    while numberOfGames < 400:
-    #while True:
+    while numberOfGames < 1000:
         snakeHead = env.env.grid.snakes[0]._deque[-1]
         if mode == 'qlearning':
             done, score = QTable.qLearning(agent, env, qTable, snakeHead, score)
         else:
             done, score, action, actualState = QTable.sarsa(action, agent, env, qTable, snakeHead, score, actualState)
+
+        if score > maxScore:
+            maxScore = score
 
         if done:
             numberOfGames = numberOfGames + 1
@@ -84,18 +86,18 @@ if __name__ == "__main__":
                 agent.decrease_epsilon()
                 print("Epsilon = ", agent.epsilon)
             env.reset()
-            totalScore = totalScore + score
-            plot(score, totalScore, scoreList, meanScoreList, numberOfGames)
 
+            totalScore = totalScore + score
+            meanScore = totalScore / numberOfGames
+            print("Max_score =", maxScore, "score =", score, ", MeanScore=", meanScore, ", TotalScore =", totalScore, ", NumberGames =", numberOfGames)
+            meanScoreList.append(meanScore)
+            scoreList.append(score)
+            plot(scoreList, meanScoreList)
             score = 0
 
-        #time.sleep(0.02)
+        time.sleep(0.01)
 
-    if mode == 'qlearning':
-        plt.savefig('ResultsQlearningTabularReward2-0_9-1-0_1-0_9-400Games_3.png')
-    else:
-        plt.savefig('ResultsSarsaTabularReward1-0_9-1-0_1-0_9-400Games.png')
-    env.close()
+    plt.savefig('ResultsQlearning.png')
 
     if store is True:
         storeQTable(qTable, mode)

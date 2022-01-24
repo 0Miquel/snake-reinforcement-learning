@@ -4,12 +4,12 @@ import math
 from collections import deque
 
 class Agent:
-    def __init__(self, model_type, gamma = 0.9, epsilon = 0.4, rewardType = 0, stateType=0):
+    def __init__(self, gamma = 0.9, epsilon = 0.4, rewardType = 0, stateType=0, learningRate=0.1):
         self.epsilon = epsilon #1 = random move 100%, 0 = no random moves
         self.gamma = gamma
-        self.model_type = model_type
         self.rewardType = rewardType
         self.stateType = stateType
+        self.learningRate = learningRate
 
     def get_state(self, env):
         if self.stateType == 0:
@@ -141,4 +141,12 @@ class Agent:
                     reward = reward + 100
                 else:
                     reward = 5
+        elif self.rewardType == 2: # if dies -100 if eats apple + 100, if survives but doesn't eat - 5
+            if done is True:
+                reward = reward - 1000
+            else:
+                if appleEaten is True:
+                    reward = reward + 1000
+                else:
+                    reward = -1
         return reward

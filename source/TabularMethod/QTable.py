@@ -1,7 +1,4 @@
 def qLearning(agent, env, qTable, snakeHead, score):
-    learning_rate = 0.1  # usually used 0.1, it states the importance of the new information gained
-    discount_factor = 0.9 # if close to 1 more importance to long term rewards, else only considers low term reward
-
     actualState = agent.get_state(env) # getting the actual state from the environment
     actualState = actualState.astype(str)
     actualState = ''.join(actualState) # convert actualState to string
@@ -14,7 +11,7 @@ def qLearning(agent, env, qTable, snakeHead, score):
     observation, reward, done, info = env.step(action)
     env.render()
 
-    if reward is 100:
+    if reward > 0:
         appleEaten = True
         score = score + 1
     else:
@@ -35,14 +32,11 @@ def qLearning(agent, env, qTable, snakeHead, score):
     # we calculate the new value of the qTable, using the reward from the previous action and updating it on the table
 
     qTable[lastState][action] = qTable[lastState][action] + \
-    learning_rate * (reward + discount_factor*max(qTable[actualState]) - qTable[lastState][action])
+    agent.learningRate * (reward + agent.gamma*max(qTable[actualState]) - qTable[lastState][action])
 
     return done, score
 
 def sarsa(action, agent, env, qTable, snakeHead, score, actualState):
-    learning_rate = 0.1  # usually used 0.1, it states the importance of the new information gained
-    discount_factor = 0.9 # if close to 1 more importance to long term rewards, else only considers low term reward
-
     if action is None:
         actualState = agent.get_state(env) # getting the actual state from the environment
         actualState = actualState.astype(str)
@@ -56,7 +50,7 @@ def sarsa(action, agent, env, qTable, snakeHead, score, actualState):
     observation, reward, done, info = env.step(action)
     env.render()
 
-    if reward is 100:
+    if reward > 0:
         appleEaten = True
         score = score + 1
     else:
@@ -79,6 +73,6 @@ def sarsa(action, agent, env, qTable, snakeHead, score, actualState):
     # we calculate the new value of the qTable, using the reward from the previous action and updating it on the table
 
     qTable[lastState][action] = qTable[lastState][action] + \
-        learning_rate * (reward + discount_factor*qTable[actualState][newAction] - qTable[lastState][action])
+        agent.learningRate * (reward + agent.gamma*qTable[actualState][newAction] - qTable[lastState][action])
 
     return done, score, newAction, actualState
