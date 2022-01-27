@@ -27,20 +27,7 @@ def storeQTable(qTable, mode):
     pickle.dump(qTable, file)
     file.close()
 
-
-def plot(scoreList, meanScoreList):
-    plt.plot(np.array(scoreList))
-    plt.plot(meanScoreList)
-    plt.title('Results of training qlearning')
-    plt.xlabel('Number of Games')
-    plt.ylabel('Score')
-    plt.show(block=False)
-
-
 if __name__ == "__main__":
-    action = None
-    actualState = None
-
     env = gym.make('Snake-16x16-v0')
     observation = env.reset()
     env.render()
@@ -49,15 +36,10 @@ if __name__ == "__main__":
     action = None
     actualState = None
 
-    #Plot values
-    plt.ion()
-    scoreList = []
-    meanScoreList = []
     score = 0
     numberOfGames = 1
     totalScore = 0
     maxScore = 0
-
 
     #Choose algorithm and if you want to load a dictionary or train a new one, you can also store it
     mode = 'qlearning' #qlearning or sarsa
@@ -90,9 +72,6 @@ if __name__ == "__main__":
             totalScore = totalScore + score
             meanScore = totalScore / numberOfGames
             print("Max_score =", maxScore, "score =", score, ", MeanScore=", meanScore, ", TotalScore =", totalScore, ", NumberGames =", numberOfGames)
-            meanScoreList.append(meanScore)
-            scoreList.append(score)
-            plot(scoreList, meanScoreList)
             score = 0
 
         time.sleep(0.01)
