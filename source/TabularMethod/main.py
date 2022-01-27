@@ -6,12 +6,11 @@ import pickle
 import numpy as np
 import gym_snake
 
-import matplotlib.pyplot as plt
 
 def loadQTable(qTable, mode, gamma, epsilon, reward, state):
     agent = Agent(gamma=gamma, epsilon=epsilon, rewardType=reward, stateType=state)
     if mode == 'qlearning':
-        file = open("qTableReward.txt", "rb")
+        file = open("qTableQlearning.txt", "rb")
     else:
         file = open("qTableSarsa.txt", "rb")
     qTable = pickle.load(file)
@@ -43,7 +42,7 @@ if __name__ == "__main__":
 
     #Choose algorithm and if you want to load a dictionary or train a new one, you can also store it
     mode = 'qlearning' #qlearning or sarsa
-    load = False
+    load = True
     store = False
 
     if load is True:
@@ -75,8 +74,6 @@ if __name__ == "__main__":
             score = 0
 
         time.sleep(0.01)
-
-    plt.savefig('ResultsQlearning.png')
 
     if store is True:
         storeQTable(qTable, mode)
